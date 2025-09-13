@@ -65,11 +65,10 @@ classes = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat',
            'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
 for device in ['cuda', 'cpu']:
-    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-    print(device)
+
     model = model.to(device)
 
-    criterion = nn.CrossEntropyLoss()  # 交叉熵损失（已包含Softmax）
+    criterion = nn.CrossEntropyLoss()                           # 交叉熵损失（已包含Softmax）
     optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
     num_epochs = 10
