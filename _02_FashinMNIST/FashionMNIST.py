@@ -3,7 +3,7 @@ import torch.nn as nn
 import torchvision
 import torchvision.transforms as transforms
 import matplotlib.pyplot as plt
-
+import time 
 
 torch.manual_seed(42)
 
@@ -64,64 +64,68 @@ print("测试集大小:", len(test_dataset))
 classes = ['T-shirt', 'Trouser', 'Pullover', 'Dress', 'Coat', 
            'Sandal', 'Shirt', 'Sneaker', 'Bag', 'Ankle boot']
 
+for device in ['cuda', 'cpu']:
+    # device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
+    print(device)
+    model = model.to(device)
 
-device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = model.to(device)
+    criterion = nn.CrossEntropyLoss()  # 交叉熵损失（已包含Softmax）
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
 
-criterion = nn.CrossEntropyLoss()  # 交叉熵损失（已包含Softmax）
-optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
-
-num_epochs = 10
-total_step = len(train_loader)
-loss_history = []
-acc_history = []
-
-for epoch in range(num_epochs):
-    model.train()  # 设置为训练模式（启用Dropout/BatchNorm）
-    running_loss = 0.0
-    correct = 0
-    total = 0
-    
-    for i, (images, labels) in enumerate(train_loader):
-        # 将数据移动到设备
-        images = images.reshape(-1, 28*28).to(device)
-        labels = labels.to(device)
+    num_epochs = 10
+    total_step = len(train_loader)
+    loss_history = []
+    acc_history = []
+    start = time.perf_counter()
+    for epoch in range(num_epochs):
+        model.train()  # 设置为训练模式（启用Dropout/BatchNorm）
+        running_loss = 0.0
+        correct = 0
+        total = 0
         
-        # 前向传播
-        outputs = model(images)
-        loss = criterion(outputs, labels)
+        for i, (images, labels) in enumerate(train_loader):
+            # 将数据移动到设备
+            images = images.reshape(-1, 28*28).to(device)
+            labels = labels.to(device)
+            
+            # 前向传播
+            outputs = model(images)
+            loss = criterion(outputs, labels)
+            
+            # 反向传播与优化
+            optimizer.zero_grad()
+            loss.backward()
+            optimizer.step()
+            
+            # 统计指标
+            running_loss += loss.item()
+            _, predicted = torch.max(outputs.data, 1)
+            total += labels.size(0)
+            correct += (predicted == labels).sum().item()
         
-        # 反向传播与优化
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
+        # 计算本epoch指标
+        epoch_loss = running_loss / total_step
+        epoch_acc = 100 * correct / total
+        loss_history.append(epoch_loss)
+        acc_history.append(epoch_acc)
         
-        # 统计指标
-        running_loss += loss.item()
-        _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
-    
-    # 计算本epoch指标
-    epoch_loss = running_loss / total_step
-    epoch_acc = 100 * correct / total
-    loss_history.append(epoch_loss)
-    acc_history.append(epoch_acc)
-    
-    # 打印训练进度
-    print(f'Epoch [{epoch+1}/{num_epochs}], '
-          f'Loss: {epoch_loss:.4f}, '
-          f'Accuracy: {epoch_acc:.2f}%')
+        # 打印训练进度
+        print(f'Epoch [{epoch+1}/{num_epochs}], '
+            f'Loss: {epoch_loss:.4f}, '
+            f'Accuracy: {epoch_acc:.2f}%')
 
-# 可视化训练过程
-plt.figure(figsize=(12,4))
-plt.subplot(1,2,1)
-plt.plot(loss_history, label='Training Loss')
-plt.title('Loss Curve')
-plt.subplot(1,2,2)
-plt.plot(acc_history, label='Training Accuracy')
-plt.title('Accuracy Curve')
-plt.show()
+    end = time.perf_counter()
+    print(f"{device} time : {end - start}")
+    # 可视化训练过程
+    plt.figure(figsize=(12,4))
+    plt.subplot(1,2,1)
+    plt.plot(loss_history, label='Training Loss')
+    plt.title('Loss Curve')
+    plt.subplot(1,2,2)
+    plt.plot(acc_history, label='Training Accuracy')
+    plt.title('Accuracy Curve')
+    plt.show()
+    
 
 model.eval()  # 设置为评估模式（关闭Dropout/BatchNorm）
 with torch.no_grad():

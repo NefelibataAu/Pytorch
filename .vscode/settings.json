@@ -1,0 +1,9 @@
+{
+    "terminal.integrated.profiles.windows": {
+        "Anaconda Prompt": {
+            "path": "C:\\Windows\\System32\\cmd.exe",
+            "args": ["/K", "D:\\CodeLanguage\\Anaconda\\anaconde\\Scripts\\activate.bat"]
+        }
+    },
+    "terminal.integrated.defaultProfile.windows": "Anaconda Prompt"
+}
